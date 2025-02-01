@@ -1,0 +1,605 @@
+
+<html><head><base href="." />
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #ffffff;
+    padding: 20px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(15, 40px);
+    gap: 1px;
+    background: #f0f7ff; /* Changed from #333 to match body background */
+    padding: 2px;
+    border-radius: 4px;
+    margin: 10px; /* Reduced from 20px to 10px */
+  }
+
+  .cell {
+    width: 40px;
+    height: 40px;
+    background: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 20px;
+    font-weight: bold;
+    text-transform: uppercase;
+    border: 1px solid black; /* Add border to each cell */
+    position: relative;
+  }
+
+  .cell-number {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    font-size: 12px;
+    font-weight: bold;
+    color: black;
+    z-index: 1;
+  }
+
+  .cell.black {
+    background: #f0f7ff; /* Changed from #333 to match body background */
+    border: none; /* Remove border for black cells */
+  }
+
+  .cell input {
+    width: 30px;
+    height: 30px;
+    text-align: center;
+    font-size: 20px;
+    border: none;
+    text-transform: uppercase;
+    background: transparent; /* Make input background transparent */
+    position: relative;
+    z-index: 0;
+  }
+
+  .clues {
+    max-width: 400px;
+    margin: 10px; /* Reduced from 20px to 10px */
+  }
+
+  .clues h3 {
+    margin: 10px 0 5px 0; /* Reduce margins around the "Across:" and "Down:" headings */
+  }
+
+  .clues p {
+    margin: 5px 0; /* Reduce margins between clues */
+  }
+
+  .correct {
+    background: #90EE90;
+  }
+
+  .wrong {
+    background: #FFB6C1;
+  }
+
+  button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin: 10px;
+  }
+
+  button:hover {
+    background: #45a049;
+  }
+
+  .hint {
+    color: #666;
+    font-style: italic;
+    font-size: 0.9em;
+  }
+</style>
+</head><body>
+<h1>Crossword</h1>
+<div class="grid" id="crossword"></div>
+<div class="clues" id="clues"></div>
+<button onclick="checkAnswers()">Check Answers</button>
+<button onclick="showHint()">Get a Hint</button>
+<button onclick="newCrossword()">New Crossword</button>
+
+<script>
+const wordList = [
+  'lion', 'tiger', 'elephant', 'giraffe', 'zebra', 'hippopotamus', 'rhinoceros', 
+  'crocodile', 'cheetah', 'kangaroo', 'koala', 'panda', 'gorilla', 'chimpanzee', 
+  'leopard', 'hyena', 'wolf', 'fox', 'bear', 'penguin', 'dolphin', 'whale', 
+  'octopus', 'shark', 'jellyfish', 'seahorse', 'flamingo', 'peacock', 
+  'ostrich', 'sparrow', 'parrot', 'eagle', 'owl', 'bat', 'rabbit', 'squirrel', 
+  'hedgehog', 'deer', 'camel', 'llama', 'buffalo', 'moose', 'beaver', 
+  'otter', 'seal', 'walrus', 'crab', 'lobster', 'starfish'
+];
+
+const clues = {
+  'lion': [
+    'King of the jungle',
+    'A big wild cat with a mane',
+    'Lives in grasslands and savannas',
+    'Roars loudly'
+  ],
+  'tiger': [
+    'A large striped wild cat',
+    'Native to forests in Asia',
+    'Known for its powerful roar',
+    'Orange with black stripes'
+  ],
+  'elephant': [
+    'Largest land animal',
+    'Has a long trunk',
+    'Big ears and tusks',
+    'Loves water'
+  ],
+  'giraffe': [
+    'Tallest land animal',
+    'Has a very long neck',
+    'Eats leaves from tall trees',
+    'Spots on its body'
+  ],
+  'zebra': [
+    'Black and white stripes',
+    'Looks like a horse',
+    'Found in African savannas',
+    'Can run very fast'
+  ],
+  'hippopotamus': [
+    'A large animal living near water',
+    'Has thick skin and big teeth',
+    'Loves to stay in rivers',
+    'Also called "hippo"'
+  ],
+  'rhinoceros': [
+    'A big animal with thick skin',
+    'Has one or two horns',
+    'Native to Africa and Asia',
+    'Also called "rhino"'
+  ],
+  'crocodile': [
+    'Large reptile with a strong tail',
+    'Lives in rivers and swamps',
+    'Has sharp teeth and powerful jaws',
+    'Related to alligators'
+  ],
+  'cheetah': [
+    'Fastest land animal',
+    'Spots all over its body',
+    'Can sprint up to 70 mph',
+    'A wild cat in Africa'
+  ],
+  'kangaroo': [
+    'Native to Australia',
+    'Hops on strong back legs',
+    'Carries babies in a pouch',
+    'A marsupial animal'
+  ],
+  'koala': [
+    'Native to Australia',
+    'Eats eucalyptus leaves',
+    'Looks like a bear but isn’t',
+    'Sleeps a lot'
+  ],
+  'panda': [
+    'Black and white bear',
+    'Loves to eat bamboo',
+    'Native to China',
+    'A symbol of conservation'
+  ],
+  'gorilla': [
+    'Largest living primate',
+    'Lives in African forests',
+    'Strong and powerful',
+    'Gentle and social in groups'
+  ],
+  'chimpanzee': [
+    'Highly intelligent primate',
+    'Shares 98% DNA with humans',
+    'Uses tools to gather food',
+    'Native to African forests'
+  ],
+  'leopard': [
+    'A big wild cat with spots',
+    'Climbs trees to rest',
+    'Fast and strong predator',
+    'Lives in Asia and Africa'
+  ],
+  'hyena': [
+    'Known for its eerie laugh',
+    'A strong scavenger',
+    'Lives in African grasslands',
+    'Has powerful jaws'
+  ],
+  'wolf': [
+    'Lives in packs',
+    'Ancestor of domestic dogs',
+    'Howls to communicate',
+    'A wild carnivore'
+  ],
+  'fox': [
+    'Known for its cunning nature',
+    'Small wild dog with a bushy tail',
+    'Often red or brown',
+    'Lives in forests and fields'
+  ],
+  'bear': [
+    'A large wild mammal',
+    'Loves honey and berries',
+    'Can stand on two legs',
+    'Found in forests and mountains'
+  ],
+  'penguin': [
+    'A flightless bird',
+    'Lives in icy regions',
+    'Waddles when walking',
+    'Excellent swimmer'
+  ],
+  'dolphin': [
+    'A friendly marine mammal',
+    'Known for its intelligence',
+    'Swims and jumps in the ocean',
+    'Communicates with clicks'
+  ],
+  'whale': [
+    'Largest marine mammal',
+    'Breathes through a blowhole',
+    'Some sing underwater songs',
+    'Lives in the ocean'
+  ],
+  'octopus': [
+    'Has eight arms',
+    'A very intelligent sea creature',
+    'Can squirt ink',
+    'Lives in the ocean'
+  ],
+  'shark': [
+    'A feared ocean predator',
+    'Has sharp teeth',
+    'Excellent swimmer',
+    'Some are harmless to humans'
+  ],
+  'jellyfish': [
+    'A sea creature with tentacles',
+    'Transparent and gelatinous',
+    'Can sting its prey',
+    'Floats in the ocean'
+  ],
+  'seahorse': [
+    'A tiny marine creature',
+    'Looks like a horse',
+    'Males carry the babies',
+    'Swims upright'
+  ],
+  'flamingo': [
+    'A pink bird with long legs',
+    'Stands on one leg',
+    'Eats shrimp and algae',
+    'Found near lakes and lagoons'
+  ],
+  'peacock': [
+    'A bird with a colorful tail',
+    'Males display beautiful feathers',
+    'Native to India',
+    'Symbol of beauty'
+  ],
+  'ostrich': [
+    'The largest bird',
+    'Cannot fly but runs fast',
+    'Lays huge eggs',
+    'Native to Africa'
+  ],
+  'sparrow': [
+    'A small brown bird',
+    'Found in cities and villages',
+    'Chirps melodiously',
+    'Builds nests near homes'
+  ],
+  'parrot': [
+    'A colorful talking bird',
+    'Known for mimicking sounds',
+    'Eats seeds and fruits',
+    'Lives in tropical regions'
+  ],
+  'eagle': [
+    'A strong bird of prey',
+    'Has sharp eyes and talons',
+    'Soars high in the sky',
+    'Symbol of strength'
+  ],
+  'owl': [
+    'A nocturnal bird',
+    'Has big round eyes',
+    'Hunts at night',
+    'Symbol of wisdom'
+  ],
+  'bat': [
+    'A flying mammal',
+    'Eats insects or fruits',
+    'Active at night',
+    'Uses echolocation'
+  ],
+  'rabbit': [
+    'A small furry animal',
+    'Has long ears',
+    'Eats carrots and grass',
+    'Hops around'
+  ],
+  'squirrel': [
+    'A small animal with a bushy tail',
+    'Eats nuts and seeds',
+    'Lives in trees',
+    'Very agile climber'
+  ],
+  'hedgehog': [
+    'A small spiny mammal',
+    'Rolls into a ball for defense',
+    'Eats insects',
+    'Active at night'
+  ],
+  'deer': [
+    'A gentle forest animal',
+    'Has antlers (males)',
+    'Eats grass and plants',
+    'Runs gracefully'
+  ],
+  'camel': [
+    'Known as the ship of the desert',
+    'Has one or two humps',
+    'Stores fat in its humps',
+    'Can survive without water for long'
+  ],
+  'llama': [
+    'A woolly animal from South America',
+    'Related to camels',
+    'Used to carry loads',
+    'Spits when annoyed'
+  ],
+  'buffalo': [
+    'A large strong animal',
+    'Found in grasslands',
+    'Has curved horns',
+    'Eats grass'
+  ],
+  'moose': [
+    'Largest member of the deer family',
+    'Has large antlers',
+    'Found in North America',
+    'Eats aquatic plants'
+  ],
+  'beaver': [
+    'A dam-building rodent',
+    'Has strong teeth',
+    'Cuts down trees',
+    'Lives near rivers'
+  ],
+  'otter': [
+    'A playful water animal',
+    'Eats fish',
+    'Loves to swim',
+    'Holds hands while floating'
+  ],
+  'seal': [
+    'A marine mammal',
+    'Has flippers and whiskers',
+    'Loves cold waters',
+    'Excellent swimmer'
+  ],
+  'walrus': [
+    'A large marine animal',
+    'Has long tusks',
+    'Lives in icy waters',
+    'Related to seals'
+  ],
+  'crab': [
+    'A sea creature with claws',
+    'Walks sideways',
+    'Has a hard shell',
+    'Lives near shores'
+  ],
+  'lobster': [
+    'A marine creature with claws',
+    'Has a hard red shell when cooked',
+    'Lives on the ocean floor',
+    'Expensive seafood delicacy'
+  ],
+  'starfish': [
+    'A sea creature shaped like a star',
+    'Can regenerate arms',
+    'Has five or more arms',
+    'Lives on the ocean floor'
+  ]
+};
+
+
+function getRandomClue(word) {
+  if (Array.isArray(clues[word])) {
+    return clues[word][Math.floor(Math.random() * clues[word].length)];
+  }
+  return `Definition of ${word}`;
+}
+
+let currentPuzzle = null;
+
+function generateCrossword() {
+  const selectedWords = [];
+  const tempWordList = [...wordList];
+  for (let i = 0; i < 6; i++) {
+    const randomIndex = Math.floor(Math.random() * tempWordList.length);
+    selectedWords.push(tempWordList.splice(randomIndex, 1)[0]);
+  }
+
+  const puzzle = {
+    across: {},
+    down: {}
+  };
+
+  selectedWords.forEach((word, index) => {
+    if (index < 3) {
+      puzzle.across[index + 1] = {
+        word: word.toUpperCase(),
+        row: index * 2,
+        col: 0,
+        clue: getRandomClue(word)
+      };
+    } else {
+      puzzle.down[index - 2] = {
+        word: word.toUpperCase(),
+        row: 0,
+        col: (index - 3) * 2,
+        clue: getRandomClue(word)
+      };
+    }
+  });
+
+  return puzzle;
+}
+
+function createGrid() {
+  const grid = document.getElementById('crossword');
+  grid.innerHTML = '';
+  
+  const maxLength = Math.max(
+    ...Object.values(currentPuzzle.across).map(w => w.word.length),
+    ...Object.values(currentPuzzle.down).map(w => w.word.length)
+  );
+  
+  grid.style.gridTemplateColumns = `repeat(${maxLength + 4}, 40px)`;
+  
+  for (let i = 0; i < maxLength + 4; i++) {
+    for (let j = 0; j < maxLength + 4; j++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      
+      let isPartOfWord = false;
+      let isFirstCell = false;
+      let numberToShow = null;
+      
+      // Check if this cell is the start of any word
+      for (const direction in currentPuzzle) {
+        for (const wordNum in currentPuzzle[direction]) {
+          const word = currentPuzzle[direction][wordNum];
+          if (i === word.row && j === word.col) {
+            isFirstCell = true;
+            numberToShow = wordNum;
+          }
+          if (direction === 'across') {
+            if (i === word.row && j >= word.col && j < word.col + word.word.length) {
+              isPartOfWord = true;
+            }
+          } else {
+            if (j === word.col && i >= word.row && i < word.row + word.word.length) {
+              isPartOfWord = true;
+            }
+          }
+        }
+      }
+
+      if (isPartOfWord) {
+        if (isFirstCell) {
+          const number = document.createElement('div');
+          number.className = 'cell-number';
+          number.textContent = numberToShow;
+          cell.appendChild(number);
+        }
+        const input = document.createElement('input');
+        input.maxLength = 1;
+        input.dataset.row = i;
+        input.dataset.col = j;
+        cell.appendChild(input);
+      } else {
+        cell.classList.add('black');
+      }
+      
+      grid.appendChild(cell);
+    }
+  }
+}
+
+function updateClues() {
+  const cluesDiv = document.getElementById('clues');
+  let cluesHTML = '<h3>Across:</h3>';
+  
+  for (const wordNum in currentPuzzle.across) {
+    cluesHTML += `<p>${wordNum}. ${currentPuzzle.across[wordNum].clue} <span class="hint">(${currentPuzzle.across[wordNum].word.length} letters)</span></p>`;
+  }
+  
+  cluesHTML += '<h3>Down:</h3>';
+  for (const wordNum in currentPuzzle.down) {
+    cluesHTML += `<p>${wordNum}. ${currentPuzzle.down[wordNum].clue} <span class="hint">(${currentPuzzle.down[wordNum].word.length} letters)</span></p>`;
+  }
+  
+  cluesDiv.innerHTML = cluesHTML;
+}
+
+function checkAnswers() {
+  const inputs = document.querySelectorAll('.cell input');
+  inputs.forEach(input => {
+    input.parentElement.classList.remove('correct', 'wrong');
+    
+    const row = parseInt(input.dataset.row);
+    const col = parseInt(input.dataset.col);
+    let correctLetter = null;
+
+    for (const direction in currentPuzzle) {
+      for (const wordNum in currentPuzzle[direction]) {
+        const word = currentPuzzle[direction][wordNum];
+        if (direction === 'across' && row === word.row && col >= word.col && col < word.col + word.word.length) {
+          correctLetter = word.word[col - word.col];
+        } else if (direction === 'down' && col === word.col && row >= word.row && row < word.row + word.word.length) {
+          correctLetter = word.word[row - word.row];
+        }
+      }
+    }
+
+    if (correctLetter) {
+      if (input.value.toUpperCase() === correctLetter) {
+        input.parentElement.classList.add('correct');
+      } else if (input.value) {
+        input.parentElement.classList.add('wrong');
+      }
+    }
+  });
+}
+
+function showHint() {
+  const inputs = document.querySelectorAll('.cell input');
+  const emptyInputs = Array.from(inputs).filter(input => !input.value);
+  
+  if (emptyInputs.length > 0) {
+    const randomInput = emptyInputs[Math.floor(Math.random() * emptyInputs.length)];
+    const row = parseInt(randomInput.dataset.row);
+    const col = parseInt(randomInput.dataset.col);
+    
+    for (const direction in currentPuzzle) {
+      for (const wordNum in currentPuzzle[direction]) {
+        const word = currentPuzzle[direction][wordNum];
+        if (direction === 'across' && row === word.row && col >= word.col && col < word.col + word.word.length) {
+          randomInput.value = word.word[col - word.col];
+        } else if (direction === 'down' && col === word.col && row >= word.row && row < word.row + word.word.length) {
+          randomInput.value = word.word[row - word.row];
+        }
+      }
+    }
+  }
+}
+
+function newCrossword() {
+  currentPuzzle = generateCrossword();
+  createGrid();
+  updateClues();
+}
+
+// Initialize the crossword when the page loads
+newCrossword();
+</script>
+ <div class="footer">Author: Aaron Shi. Released in November, 2024.</div>
+</body></html>
